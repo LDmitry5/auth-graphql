@@ -1,11 +1,14 @@
 import { useState, type FC, type SubmitEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { Button, Input, Text, TextAlign } from "@alphacore/ui-kit";
 import "./LoginPage.css";
 
 export const LoginPage: FC = () => {
-  const [email, setEmail] = useState("admin@admin.com");
-  const [password, setPassword] = useState("admin");
+  const [email, setEmail] = useState("");
+  const [errorEmail, setErrorEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorPassword, setErrorPassword] = useState("");
   const { login, error, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,35 +16,94 @@ export const LoginPage: FC = () => {
   const from = (location.state as any)?.from?.pathname || "/";
 
   const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+    if (!email) {
+      setErrorEmail("Введите адрес электронной почты");
+    } else {
+      setErrorEmail("");
+    }
+    if (!password) {
+      setErrorPassword("Введите пароль");
+    } else {
+      setErrorPassword("");
+    }
+
     e.preventDefault();
     try {
       await login({ email, password });
       navigate(from, { replace: true });
-    } catch {
+    } catch (error) {
       // Ошибка уже обработана в контексте
+      console.error("Login failed:", error);
     }
   };
 
   return (
     <div className="login-container">
+      <svg width="122" height="18" viewBox="0 0 122 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M44.3595 11.7105C44.3595 12.463 44.5564 13.032 44.9497 13.4169C45.3429 13.8021 45.9064 13.9945 46.6408 13.9945H58.5453V17.9854H45.828C44.9014 17.9854 44.0535 17.8585 43.2845 17.6043C42.5148 17.3511 41.8554 16.9739 41.3047 16.4758C40.7541 15.9764 40.3256 15.3594 40.0198 14.6249C39.7138 13.8896 39.561 13.0495 39.561 12.1042V5.88117C39.561 4.93614 39.7138 4.10062 40.0198 3.37414C40.3256 2.64765 40.7541 2.03508 41.3047 1.53602C41.8554 1.03729 42.5148 0.656214 43.2845 0.393776C44.0535 0.131096 44.9014 0 45.828 0H58.5453V3.99086H46.6408C45.9064 3.99086 45.3429 4.1836 44.9497 4.5685C44.5564 4.95397 44.3595 5.52273 44.3595 6.27527V11.7105Z"
+          fill="#244CA7"
+        />
+        <path
+          d="M75.484 6.27527C75.484 5.52273 75.2874 4.95397 74.8938 4.5685C74.5005 4.1836 73.9367 3.99086 73.2026 3.99086H68.4303C67.6961 3.99086 67.1324 4.1836 66.7391 4.5685C66.3459 4.95397 66.1492 5.52273 66.1492 6.27527V11.7105C66.1492 12.463 66.3459 13.032 66.7391 13.4169C67.1324 13.8021 67.6961 13.9945 68.4303 13.9945H73.2026C73.9367 13.9945 74.5005 13.8021 74.8938 13.4169C75.2874 13.032 75.484 12.463 75.484 11.7105V6.27527ZM61.7832 3.37414C62.089 2.64765 62.5176 2.03508 63.068 1.53602C63.6189 1.03729 64.2783 0.656214 65.0476 0.393776C65.817 0.131096 66.6645 0 67.5913 0H74.0155C74.9418 0 75.7896 0.131096 76.5589 0.393776C77.328 0.656214 77.9922 1.03729 78.5518 1.53602C79.1109 2.03508 79.5435 2.64765 79.8497 3.37414C80.1553 4.10062 80.3088 4.93614 80.3088 5.88117V12.1042C80.3088 13.0495 80.1553 13.8896 79.8497 14.6249C79.5435 15.3594 79.1109 15.9764 78.5518 16.4758C77.9922 16.9739 77.328 17.3511 76.5589 17.6043C75.7896 17.8585 74.9418 17.9854 74.0155 17.9854H67.5913C66.6645 17.9854 65.817 17.8585 65.0476 17.6043C64.2783 17.3511 63.6189 16.9739 63.068 16.4758C62.5176 15.9764 62.089 15.3594 61.7832 14.6249C61.4773 13.8896 61.3245 13.0495 61.3245 12.1042V5.88117C61.3245 4.93614 61.4773 4.10062 61.7832 3.37414Z"
+          fill="#244CA7"
+        />
+        <path
+          d="M102.15 17.9854H96.2506L89.2231 11.0015H83.0876V7.01031H94.9658C95.5602 7.01031 96.0758 6.89232 96.5125 6.65602C96.95 6.41964 97.1687 6.03889 97.1687 5.51378C97.1687 4.97115 96.95 4.58153 96.5125 4.34523C96.0758 4.10917 95.5602 3.99086 94.9658 3.99086H83.0876V0H95.779C96.6352 0 97.4305 0.113914 98.1649 0.341337C98.8992 0.569088 99.5367 0.897318 100.079 1.32578C100.621 1.75482 101.062 2.28889 101.403 2.9276C101.744 3.56655 101.967 4.29751 102.072 5.12V5.88117C101.914 7.56189 101.25 8.83507 100.079 9.70153C98.9073 10.568 97.3167 11.0015 95.3065 11.0015L102.15 17.9854Z"
+          fill="#244CA7"
+        />
+        <path d="M104.851 -1.90735e-06H122V3.99086H104.851V-1.90735e-06Z" fill="#244CA7" />
+        <path d="M104.851 7.01031H122V11.0015H104.851V7.01031Z" fill="#244CA7" />
+        <path d="M104.851 13.9945H122V17.9854H104.851V13.9945Z" fill="#244CA7" />
+        <path d="M25.9524 7.01031V11.0015H36.7816V7.01031H25.9524Z" fill="#DD1E26" />
+        <path
+          d="M14.1595 11.7251C14.1595 12.478 13.9629 13.047 13.5696 13.4315C13.1761 13.817 12.6126 14.0092 11.8781 14.0092H7.10613C6.37173 14.0092 5.8079 13.817 5.41464 13.4315C5.0214 13.047 4.82477 12.478 4.82477 11.7251V6.29018C4.82477 5.53764 5.0214 4.96863 5.41464 4.58316C5.8079 4.19858 6.37173 4.00585 7.10613 4.00585H11.8781C12.6126 4.00585 13.1761 4.19858 13.5696 4.58316C13.9629 4.96863 14.1595 5.53764 14.1595 6.29018V11.7251ZM18.8051 4.28889C18.7324 3.97401 18.6438 3.67062 18.5253 3.3888C18.2194 2.66264 17.7865 2.04966 17.2274 1.55093C16.6677 1.05187 16.0038 0.6712 15.2345 0.408762C14.4651 0.146 13.6173 0.0146599 12.691 0.0146599H6.2669C5.34032 0.0146599 4.49251 0.146 3.72349 0.408762C2.95382 0.6712 2.29438 1.05187 1.74358 1.55093C1.19309 2.04966 0.764581 2.66264 0.458686 3.3888C0.152789 4.1152 0 4.95112 0 5.89616V12.1189C0 13.0642 0.152789 13.9042 0.458686 14.6396C0.764581 15.375 1.19309 15.9911 1.74358 16.4904C2.29438 16.9895 2.95382 17.3658 3.72349 17.619C4.49251 17.8731 5.34032 18 6.2669 18H12.691C13.6173 18 14.4651 17.8731 15.2345 17.619C16.0038 17.3658 16.6677 16.9895 17.2274 16.4904C17.7865 15.9911 18.2194 15.375 18.5253 14.6396C18.6352 14.3749 18.7185 14.0925 18.789 13.8005L25.2776 0.634232H20.4528L18.8051 4.28889Z"
+          fill="#DD1E26"
+        />
+        <path d="M19.5649 16.1393L20.2587 17.9389H25.1559L22.0159 11.1844L19.5649 16.1393Z" fill="#DD1E26" />
+      </svg>
       <form onSubmit={handleSubmit} className="login-form">
-        <h2>Авторизация</h2>
+        <Text style={{ marginBottom: "20px" }} align={"center" as TextAlign} as="h2" variant="Font4">
+          Войдите в свой аккаунт
+        </Text>
 
         <div className="form-group">
-          <label>Email:</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+          <Input
+            error={errorEmail}
+            label="Адрес электронной почты"
+            placeholder="Введите адрес электронной почты"
+            required
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
 
         <div className="form-group">
-          <label>Пароль:</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
+          <Input
+            error={errorPassword}
+            label="Пароль"
+            placeholder="Введите пароль"
+            required
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            passwordField
+          />
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Вход..." : "Войти"}
-        </button>
+        {/* <button type="submit" disabled={loading}></button> */}
+        <Button className="login-form__button" type="submit" disabled={loading}>
+          {loading ? "Вход..." : "Продолжить"}
+        </Button>
+        <div className="login-form__wrap-text">
+          <Text as="p" variant="Font1" align={"center" as TextAlign} className="login-form__text">
+            Не удается войти в систему?
+          </Text>
+        </div>
       </form>
     </div>
   );

@@ -1,9 +1,15 @@
 import React, { useState } from "react";
 import "./SearchPanel.css";
+import { Input, Select } from "@alphacore/ui-kit";
+
+interface FilterState {
+  yes: boolean;
+  no: boolean;
+}
 
 interface SearchFilters {
-  assigned: "all" | "yes" | "no";
-  inLibrary: "all" | "yes" | "no";
+  assigned: FilterState;
+  inLibrary: FilterState;
 }
 
 interface SearchPanelProps {
@@ -11,67 +17,64 @@ interface SearchPanelProps {
   onFilterChange: (filters: SearchFilters) => void;
 }
 
-const DropdownWithCheckbox: React.FC<{
+interface DropdownWithCheckbox {
   label: string;
-  value: SearchFilters[keyof SearchFilters];
-  onChange: (value: "all" | "yes" | "no") => void;
-}> = ({ label, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  value: FilterState;
+  onChange: (value: FilterState) => void;
+}
 
-  const getDisplayText = () => {
-    switch (value) {
-      case "yes":
-        return "Да";
-      case "no":
-        return "Нет";
-      default:
-        return "Все";
-    }
+const DropdownWithCheckbox: React.FC<DropdownWithCheckbox> = ({ label, value, onChange }) => {
+  const options = [
+    { label: "Да", value: "yes" as const },
+    { label: "Нет", value: "no" as const },
+  ];
+
+  const handleToggle = (key: "yes" | "no") => {
+    onChange({ ...value, [key]: !value[key] });
   };
 
   return (
-    <div className="dropdown-container">
-      <label>{label}:</label>
-      <div className="dropdown" onClick={() => setIsOpen(!isOpen)}>
-        {getDisplayText()} ▼
-      </div>
-      {isOpen && (
-        <div className="dropdown-menu">
-          {(["all", "yes", "no"] as const).map((option) => (
-            <label key={option} className="dropdown-item">
-              <input
-                type="radio"
-                name={label}
-                checked={value === option}
-                onChange={() => {
-                  onChange(option);
-                  setIsOpen(false);
-                }}
-              />
-              {option === "all" ? "Все" : option === "yes" ? "Да" : "Нет"}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
+    <Select
+      singleChoice={false}
+      name={`filter-${label}`}
+      variant="fill"
+      placeholder={label}
+      onSelect={(selectedField) => {
+        // При клике на опцию переключаем чекбокс
+        const key = selectedField.value as "yes" | "no";
+        handleToggle(key);
+      }}
+      style={{ width: "180px" }}
+      options={options.map((opt) => ({
+        ...opt,
+        checked: value[opt.value],
+      }))}
+      onRemove={(removedField) => {
+        // При удалении снимаем чекбокс
+        const key = removedField.value as "yes" | "no";
+        handleToggle(key);
+      }}
+      errorHidden={true}
+    />
   );
 };
 
 export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearchChange, onFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SearchFilters>({
-    assigned: "all",
-    inLibrary: "all",
+    assigned: { yes: false, no: false },
+    inLibrary: { yes: false, no: false },
   });
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Дебаунс для поиска
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     onSearchChange(value);
   };
 
-  const handleFilterChange = (key: keyof SearchFilters, value: "all" | "yes" | "no") => {
-    const newFilters = { ...filters, [key]: value };
+  const handleFilterChange = (key: "assigned" | "inLibrary", newValue: { yes: boolean; no: boolean }) => {
+    const newFilters = { ...filters, [key]: newValue };
     setFilters(newFilters);
     onFilterChange(newFilters);
   };
@@ -79,13 +82,27 @@ export const SearchPanel: React.FC<SearchPanelProps> = ({ onSearchChange, onFilt
   return (
     <div className="search-panel">
       <div className="search-input-wrapper">
-        <input type="text" placeholder="Поиск по объектам..." value={searchTerm} onChange={handleSearchChange} className="search-input" />
+        <Input
+          placeholder="Найти классы"
+          type="search"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          errorHidden={true}
+        />
       </div>
 
       <div className="filters-wrapper">
-        <DropdownWithCheckbox label="Присвоенные" value={filters.assigned} onChange={(val) => handleFilterChange("assigned", val)} />
+        <DropdownWithCheckbox
+          label="Присвоенные"
+          value={filters.assigned}
+          onChange={(val) => handleFilterChange("assigned", val)}
+        />
 
-        <DropdownWithCheckbox label='В "Библиотеке"' value={filters.inLibrary} onChange={(val) => handleFilterChange("inLibrary", val)} />
+        <DropdownWithCheckbox
+          label='В "Библиотеке"'
+          value={filters.inLibrary}
+          onChange={(val) => handleFilterChange("inLibrary", val)}
+        />
       </div>
     </div>
   );

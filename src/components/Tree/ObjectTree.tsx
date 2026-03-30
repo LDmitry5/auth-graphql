@@ -1,127 +1,253 @@
-import React, { useState, useMemo } from "react";
-import CheckboxTree, { type Node as CheckboxTreeNode } from "react-checkbox-tree";
+// components/Tree/ObjectTree.tsx
+import React, { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@apollo/client/react";
-import { GET_OBJECTS_QUERY } from "../../api/objects";
-import type { TreeNode } from "../../types";
-import "react-checkbox-tree/lib/react-checkbox-tree.css";
+import { Button, Tree } from "@alphacore/ui-kit";
+import { GET_TREE_QUERY } from "../../api/objects";
+import type { TreeNode, TreeQueryResponse } from "../../types";
 import "./ObjectTree.css";
 
 interface ObjectTreeProps {
   onSelect: (node: TreeNode) => void;
   searchTerm: string;
   filters: {
-    assigned: "all" | "yes" | "no";
-    inLibrary: "all" | "yes" | "no";
+    assigned: { yes: boolean; no: boolean };
+    inLibrary: { yes: boolean; no: boolean };
   };
 }
 
-// Рекурсивная функция для фильтрации дерева
+// Генерация фейковых данных для тестирования (если нет ответа от сервера)
+const generateFakeTree = (): TreeNode => ({
+  id: "root-1",
+  label: "Корневой объект",
+  name: "root_object",
+  description: "Главный элемент иерархии",
+  is_assigned: true,
+  in_library: true,
+  properties: [
+    { name: "Тип", value: "Система", value_type: "string", measure: "" },
+    { name: "Версия", value: "2.1.0", value_type: "string", measure: "" },
+  ],
+  relations: [{ name: "parent_of" }],
+  children: [
+    {
+      id: "node-1",
+      label: "Модуль А",
+      name: "module_a",
+      description: "Основной функциональный модуль",
+      is_assigned: true,
+      in_library: false,
+      properties: [{ name: "Статус", value: "Активен", value_type: "string", measure: "" }],
+      relations: [{ name: "depends_on" }],
+      children: [
+        {
+          id: "node-1-1",
+          label: "Компонент А.1",
+          name: "component_a1",
+          description: "Подкомпонент для обработки данных",
+          is_assigned: false,
+          in_library: true,
+          properties: [{ name: "Приоритет", value: "Высокий", value_type: "string", measure: "" }],
+          relations: [],
+          children: [
+            {
+              id: "node-1-1-1",
+              label: "Элемент А.1.1",
+              name: "element_a11",
+              description: "Базовый элемент",
+              is_assigned: true,
+              in_library: true,
+              properties: [],
+              relations: [],
+            },
+            {
+              id: "node-1-1-2",
+              label: "Элемент А.1.2",
+              name: "element_a12",
+              description: "Дополнительный элемент",
+              is_assigned: false,
+              in_library: false,
+              properties: [],
+              relations: [],
+            },
+          ],
+        },
+        {
+          id: "node-1-2",
+          label: "Компонент А.2",
+          name: "component_a2",
+          description: "Интерфейсный компонент",
+          is_assigned: true,
+          in_library: true,
+          properties: [],
+          relations: [],
+        },
+      ],
+    },
+    {
+      id: "node-2",
+      label: "Модуль Б",
+      name: "module_b",
+      description: "Вспомогательный модуль",
+      is_assigned: false,
+      in_library: true,
+      properties: [],
+      relations: [],
+      children: [
+        {
+          id: "node-2-1",
+          label: "Сервис Б.1",
+          name: "service_b1",
+          description: "Фоновый сервис",
+          is_assigned: true,
+          in_library: false,
+          properties: [{ name: "Порт", value: "8080", value_type: "number", measure: "" }],
+          relations: [],
+        },
+      ],
+    },
+  ],
+});
+
+// Рекурсивная фильтрация дерева
+// ObjectTree.tsx
 const filterTree = (nodes: TreeNode[], term: string, filters: ObjectTreeProps["filters"]): TreeNode[] => {
   return nodes.reduce<TreeNode[]>((acc, node) => {
-    // Проверка по поиску
-    const matchesSearch = !term || node.label.toLowerCase().includes(term.toLowerCase());
+    const matchesSearch = !term || node.label?.toLowerCase().includes(term.toLowerCase());
 
-    // Проверка по фильтрам
+    // ✅ Фильтр "Присвоенные": показываем, если чекбокс совпадает
     const matchesAssigned =
-      filters.assigned === "all" || (filters.assigned === "yes" && node.isAssigned) || (filters.assigned === "no" && !node.isAssigned);
+      (filters.assigned.yes && node.is_assigned) ||
+      (filters.assigned.no && !node.is_assigned) ||
+      (!filters.assigned.yes && !filters.assigned.no); // если оба выключены — показываем всё
 
+    // ✅ Фильтр "Библиотека"
     const matchesLibrary =
-      filters.inLibrary === "all" || (filters.inLibrary === "yes" && node.isInLibrary) || (filters.inLibrary === "no" && !node.isInLibrary);
+      (filters.inLibrary.yes && node.in_library) ||
+      (filters.inLibrary.no && !node.in_library) ||
+      (!filters.inLibrary.yes && !filters.inLibrary.no);
 
-    if (matchesSearch && matchesAssigned && matchesLibrary) {
-      const filteredChildren = node.children ? filterTree(node.children, term, filters) : undefined;
+    const shouldIncludeNode = matchesSearch && matchesAssigned && matchesLibrary;
+    const filteredChildren = node.children ? filterTree(node.children, term, filters) : [];
 
-      // Показываем узел, если он соответствует критериям ИЛИ имеет подходящих детей
-      if (matchesSearch && matchesAssigned && matchesLibrary) {
-        acc.push({
-          ...node,
-          children: filteredChildren,
-        });
-      } else if (filteredChildren?.length) {
-        acc.push({ ...node, children: filteredChildren });
-      }
+    if (shouldIncludeNode || filteredChildren.length > 0) {
+      acc.push({ ...node, children: filteredChildren.length > 0 ? filteredChildren : undefined });
     }
     return acc;
   }, []);
 };
 
-// Конвертация в формат react-checkbox-tree
-const convertToCheckboxTree = (nodes: TreeNode[]): CheckboxTreeNode[] => {
-  return nodes.map((node) => ({
-    value: node.id,
-    label: node.label,
-    children: node.children ? convertToCheckboxTree(node.children) : undefined,
-  }));
+// Вспомогательная функция: собрать все ID из дерева (для expand/collapse all)
+const collectAllIds = (nodes: TreeNode[]): string[] => {
+  return nodes.flatMap((node) => [String(node.id), ...(node.children ? collectAllIds(node.children) : [])]);
 };
 
 export const ObjectTree: React.FC<ObjectTreeProps> = ({ onSelect, searchTerm, filters }) => {
-  const { data, loading } = useQuery(GET_OBJECTS_QUERY);
-  const [expanded, setExpanded] = useState<string[]>([]);
-  const [checked, setChecked] = useState<string[]>([]);
+  const { data, loading, error } = useQuery<TreeQueryResponse>(GET_TREE_QUERY);
 
-  const treeData = useMemo(() => {
-    if (!data?.objects) return [];
-    const filtered = filterTree(data.objects, searchTerm, filters);
-    return convertToCheckboxTree(filtered);
+  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+
+  // Подготовка данных: получение + фильтрация + конвертация ID
+  const processedTreeData = useMemo(() => {
+    let sourceNodes: TreeNode[] = [];
+
+    const normalizeNode = (node: TreeNode): TreeNode => ({
+      ...node,
+      id: String(node.id),
+      name: node.name?.trim() || node.label || "Без названия",
+      label: node.label || node.name || "Без названия",
+      children: node.children?.map(normalizeNode),
+    });
+
+    if (data?.tree) {
+      sourceNodes = [normalizeNode(data.tree)];
+    } else {
+      sourceNodes = [generateFakeTree()];
+    }
+
+    // Применяем фильтры
+    return filterTree(sourceNodes, searchTerm, filters);
   }, [data, searchTerm, filters]);
 
-  const handleExpandAll = () => {
-    const getAllValues = (nodes: CheckboxTreeNode[]): string[] => {
-      return nodes.flatMap((node) => [node.value, ...(node.children ? getAllValues(node.children) : [])]);
-    };
-    setExpanded(getAllValues(treeData));
-  };
+  // Обработчик выбора узла
+  const handleSelectNode = useCallback(
+    (node: TreeNode) => {
+      // Обновляем выбранный узел
+      setSelectedNodeIds([node.id]);
+      onSelect(node);
+    },
+    [onSelect],
+  );
 
-  const handleCollapseAll = () => {
-    setExpanded([]);
-  };
+  // Expand/Collapse all
+  const handleExpandAll = useCallback(() => {
+    const allIds = collectAllIds(processedTreeData);
+    setExpandedNodeIds(new Set(allIds));
+  }, [processedTreeData]);
 
-  const handleNodeClick = (value: string) => {
-    // Находим полный объект по ID
-    const findNode = (nodes: TreeNode[], id: string): TreeNode | undefined => {
-      for (const node of nodes) {
-        if (node.id === id) return node;
-        if (node.children) {
-          const found = findNode(node.children, id);
-          if (found) return found;
-        }
-      }
-      return undefined;
-    };
+  const handleCollapseAll = useCallback(() => {
+    setExpandedNodeIds(new Set());
+  }, []);
 
-    if (data?.objects) {
-      const selected = findNode(data.objects, value);
-      if (selected) onSelect(selected);
-    }
-  };
+  if (error) {
+    console.error("GraphQL Error:", error);
+    return (
+      <div className="tree-error" role="alert">
+        Не удалось загрузить дерево. <button onClick={() => window.location.reload()}>Повторить</button>
+      </div>
+    );
+  }
 
-  if (loading) return <div className="tree-loading">Загрузка дерева...</div>;
+  if (loading && !data) {
+    return <div className="tree-loading">Загрузка дерева...</div>;
+  }
+
+  if (processedTreeData.length === 0) {
+    return (
+      <div className="tree-empty">
+        <p>Объекты не найдены</p>
+        <small>Попробуйте изменить параметры фильтрации</small>
+      </div>
+    );
+  }
 
   return (
-    <div className="object-tree-container">
+    <div className="object-tree-container" role="tree">
+      {/* Панель управления */}
       <div className="tree-controls">
-        <button onClick={handleExpandAll}>Развернуть все</button>
-        <button onClick={handleCollapseAll}>Свернуть все</button>
+        <div className="tree-controls-group">
+          <Button onClick={handleExpandAll} type="button" title="Развернуть все узлы">
+            Развернуть
+          </Button>
+          <Button onClick={handleCollapseAll} type="button" title="Свернуть все узлы">
+            Свернуть
+          </Button>
+        </div>
       </div>
 
-      <CheckboxTree
-        nodes={treeData}
-        checked={checked}
-        expanded={expanded}
-        onCheck={setChecked}
-        onExpand={setExpanded}
-        onClick={(node) => handleNodeClick(node.value)}
-        showExpandAll={false}
-        expandOnClick={true}
-        noCascade={true}
-        icons={{
-          check: <span className="icon-check">✓</span>,
-          uncheck: <span className="icon-uncheck">□</span>,
-          halfCheck: <span className="icon-half">◑</span>,
-          expandClose: <span className="icon-expand">▶</span>,
-          expandOpen: <span className="icon-collapse">▼</span>,
-        }}
+      {/* Легенда статусов */}
+      <div className="tree-legend">
+        <span className="legend-item">
+          <span className="badge assigned">●</span> Присвоен
+        </span>
+        <span className="legend-item">
+          <span className="badge library">★</span> В библиотеке
+        </span>
+      </div>
+
+      <Tree
+        treeData={processedTreeData}
+        expandedNodes={expandedNodeIds}
+        setExpandedNodes={setExpandedNodeIds}
+        onSelectNode={handleSelectNode}
+        selectedNodeIds={selectedNodeIds}
+        withCheckbox={true}
+        clearParent={true}
+        height={400}
+        width="100%"
       />
+
+      <div className="tree-hint">💡 Клик ЛКМ по названию или кнопка &gt; для разворачивания</div>
     </div>
   );
 };

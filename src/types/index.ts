@@ -1,24 +1,44 @@
 export interface User {
   id: string;
-  firstName: string;
-  lastName: string;
   email: string;
-}
-
-export interface AuthResponse {
-  login: {
-    token: string;
-    user: User;
-  };
+  name: string;
+  createdAt: string;
 }
 
 export interface TreeNode {
   id: string;
-  label: string;
+  label?: string;
+  name: string;
   description?: string;
+  is_assigned?: boolean;
+  in_library?: boolean;
+  properties?: Property[];
+  relations?: Relation[];
   children?: TreeNode[];
-  isAssigned?: boolean;
-  isInLibrary?: boolean;
+}
+
+export interface Property {
+  name: string;
+  value: string;
+  value_type: string;
+  measure: string;
+}
+
+export interface Relation {
+  name: string;
+}
+
+export interface AuthPayload {
+  token: string;
+  user: User;
+}
+
+export interface LoginMutationResponse {
+  login: AuthPayload;
+}
+
+export interface TreeQueryResponse {
+  tree: TreeNode;
 }
 
 export interface LoginCredentials {

@@ -1,0 +1,24 @@
+/* Object Details */
+.object-details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  height: 100%;
+}
+
+.object-details.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-4);
+  font-style: italic;
+}
+
+.object-details h2 {
+  border-bottom: 2px solid var(--color-1);
+  padding-bottom: 0.5rem;
+}

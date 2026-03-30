@@ -1,0 +1,17 @@
+/* Search Panel */
+.search-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filters-wrapper {
+  display: flex;
+  gap: 10px;
+}

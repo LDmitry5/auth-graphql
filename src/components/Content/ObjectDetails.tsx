@@ -1,6 +1,7 @@
 import React from "react";
 import type { TreeNode } from "../../types";
 import "./ObjectDetails.css";
+import { Text } from "@alphacore/ui-kit";
 
 interface ObjectDetailsProps {
   selectedNode: TreeNode | null;
@@ -17,7 +18,9 @@ export const ObjectDetails: React.FC<ObjectDetailsProps> = ({ selectedNode }) =>
 
   return (
     <div className="object-details">
-      <h3>{selectedNode.label}</h3>
+      <Text as="h2" variant="Font3">
+        {selectedNode.label}
+      </Text>
       <div className="detail-row">
         <strong>ID:</strong> {selectedNode.id}
       </div>
@@ -26,10 +29,10 @@ export const ObjectDetails: React.FC<ObjectDetailsProps> = ({ selectedNode }) =>
         <p>{selectedNode.description || "Описание отсутствует"}</p>
       </div>
       <div className="detail-row">
-        <strong>Присвоен:</strong> {selectedNode.isAssigned ? "Да" : "Нет"}
+        <strong>Присвоен:</strong> {selectedNode.is_assigned ? "Да" : "Нет"}
       </div>
       <div className="detail-row">
-        <strong>В библиотеке:</strong> {selectedNode.isInLibrary ? "Да" : "Нет"}
+        <strong>В библиотеке:</strong> {selectedNode.in_library ? "Да" : "Нет"}
       </div>
     </div>
   );

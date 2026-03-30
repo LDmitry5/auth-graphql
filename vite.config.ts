@@ -13,7 +13,13 @@ export default defineConfig({
     exclude: ["@apollo/client"],
   },
   server: {
-    port: 3000,
-    open: true,
+    proxy: {
+      "/graphql": {
+        target: "http://185.207.66.100:8080",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
+    },
   },
 });

@@ -5,10 +5,11 @@ import { ObjectTree } from "../Tree/ObjectTree";
 import { ObjectDetails } from "../Content/ObjectDetails";
 import type { TreeNode } from "../../types";
 import "./MainLayout.css";
+import { Button } from "@alphacore/ui-kit";
 
 interface SearchFilters {
-  assigned: "all" | "yes" | "no";
-  inLibrary: "all" | "yes" | "no";
+  assigned: { yes: boolean; no: boolean };
+  inLibrary: { yes: boolean; no: boolean };
 }
 
 export const MainLayout: React.FC = () => {
@@ -16,10 +17,11 @@ export const MainLayout: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<SearchFilters>({
-    assigned: "all",
-    inLibrary: "all",
+    assigned: { yes: true, no: true },
+    inLibrary: { yes: true, no: true },
   });
 
+  // Обработчик выбора узла
   const handleNodeSelect = (node: TreeNode) => {
     setSelectedNode(node);
   };
@@ -28,12 +30,10 @@ export const MainLayout: React.FC = () => {
     <div className="main-layout">
       <header className="app-header">
         <div className="user-info">
-          <span>
-            👤 {user?.firstName} {user?.lastName}
-          </span>
-          <button onClick={logout} className="logout-btn">
+          <span>👤 {user?.name}</span>
+          <Button variant="red" onClick={logout}>
             Выйти
-          </button>
+          </Button>
         </div>
         <SearchPanel onSearchChange={setSearchTerm} onFilterChange={setFilters} />
       </header>

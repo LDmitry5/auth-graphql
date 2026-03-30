@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import type { User, AuthResponse, LoginCredentials } from "../types";
+import type { User, LoginMutationResponse, LoginCredentials } from "../types";
 import { useMutation } from "@apollo/client/react";
 import { LOGIN_MUTATION } from "../api/auth";
 
@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [loginMutation] = useMutation<AuthResponse, { credentials: LoginCredentials }>(LOGIN_MUTATION);
+  const [loginMutation] = useMutation<LoginMutationResponse, LoginCredentials>(LOGIN_MUTATION);
 
   useEffect(() => {
     if (token) {
@@ -33,11 +33,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [token]);
 
   const login = async (credentials: LoginCredentials) => {
+    console.log(credentials);
+
     setLoading(true);
     setError(null);
     try {
       const { data } = await loginMutation({
-        variables: { credentials },
+        variables: { ...credentials },
       });
 
       if (data?.login) {
@@ -47,9 +49,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(jwt);
         setUser(userData);
       }
-    } catch (err: any) {
-      setError(err.message || "Ошибка авторизации");
-      throw err;
+    } catch (error: any) {
+      setError(error.message || "Ошибка авторизации");
+      throw error;
     } finally {
       setLoading(false);
     }

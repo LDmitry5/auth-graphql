@@ -1,22 +1,34 @@
 import { gql } from "@apollo/client";
 
-export const GET_OBJECTS_QUERY = gql`
-  query GetObjects {
-    objects {
+export const GET_TREE_QUERY = gql`
+  query GetTree {
+    tree {
       id
       label
+      name
       description
-      isAssigned
-      isInLibrary
+      is_assigned
+      in_library
+      properties {
+        name
+        value
+        value_type
+        measure
+      }
+      relations {
+        name
+      }
       children {
         id
         label
+        name
         description
-        isAssigned
-        isInLibrary
+        is_assigned
+        in_library
         children {
           id
           label
+          name
           description
         }
       }
