@@ -225,16 +225,6 @@ export const ObjectTree: React.FC<ObjectTreeProps> = ({ onSelect, searchTerm, fi
         </div>
       </div>
 
-      {/* Легенда статусов */}
-      <div className="tree-legend">
-        <span className="legend-item">
-          <span className="badge assigned">●</span> Присвоен
-        </span>
-        <span className="legend-item">
-          <span className="badge library">★</span> В библиотеке
-        </span>
-      </div>
-
       <Tree
         treeData={processedTreeData}
         expandedNodes={expandedNodeIds}

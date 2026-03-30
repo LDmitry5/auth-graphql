@@ -8,10 +8,12 @@ import { MainLayout } from "./components/Layout/MainLayout";
 import "./App.css";
 
 function App() {
+  const basename = process.env.NODE_ENV === "production" ? "/auth-graphql" : "/";
+
   return (
     <ApolloProvider client={client}>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
 
